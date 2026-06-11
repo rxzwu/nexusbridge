@@ -104,8 +104,14 @@ class WorkerApp:
         if self._register_fn:
             self._register_fn(bridge)
         else:
-            bridge.register("ping", lambda: {"status": "ok"})
-            bridge.register("status", lambda: {"project": self.project_id, "user": self.user_id})
+            # Try to load register_handlers from worker_bundle
+            try:
+                from nexusbridgehub.worker_bundle import register_handlers  # type: ignore
+                register_handlers(bridge)
+            except (ImportError, AttributeError):
+                # Fallback to default handlers
+                bridge.register("ping", lambda: {"status": "ok"})
+                bridge.register("status", lambda: {"project": self.project_id, "user": self.user_id})
 
         _log.info("worker starting project=%s user=%s", self.project_id, self.user_id)
         await bridge.run()

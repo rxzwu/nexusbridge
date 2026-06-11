@@ -1,0 +1,145 @@
+name: Build Worker Binaries
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      server_url:
+        description: 'WebSocket server URL'
+        required: false
+        default: 'wss://bridge.example.com:8765'
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+            artifact_name: nexusbridgehub-worker.exe
+            asset_name: nexusbridgehub-worker-windows-amd64.exe
+          - os: macos-latest
+            platform: macos
+            artifact_name: nexusbridgehub-worker
+            asset_name: nexusbridgehub-worker-macos-amd64
+          - os: ubuntu-20.04
+            platform: linux
+            artifact_name: nexusbridgehub-worker
+            asset_name: nexusbridgehub-worker-linux-amd64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install .[builder]
+
+      - name: Verify installation
+        run: |
+          nexusbridgehub --help
+          python -c "import nexusbridgehub; print(f'Version: {nexusbridgehub.__version__}')"
+
+      - name: Build worker binary
+        env:
+          SERVER_URL: ${{ github.event.inputs.server_url || secrets.BRIDGE_SERVER_URL || 'wss://bridge.example.com:8765' }}
+        run: |
+          nexusbridgehub \
+            --server-url "$SERVER_URL" \
+            --name nexusbridgehub-worker \
+            --output-dir ./build-output
+
+      - name: Test binary
+        run: |
+          ./build-output/dist/${{ matrix.artifact_name }} --help || true
+
+      - name: Prepare artifact
+        run: |
+          mkdir -p ./artifacts
+          cp ./build-output/dist/${{ matrix.artifact_name }} ./artifacts/${{ matrix.asset_name }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}
+          path: ./artifacts/${{ matrix.asset_name }}
+          retention-days: 90
+
+      - name: Create release and upload assets
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./artifacts/${{ matrix.asset_name }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-with-handlers:
+    name: Build with custom handlers (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    if: github.event_name == 'workflow_dispatch'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+            artifact_name: nexusbridgehub-worker-custom.exe
+            asset_name: nexusbridgehub-worker-custom-windows-amd64.exe
+          - os: macos-latest
+            platform: macos
+            artifact_name: nexusbridgehub-worker-custom
+            asset_name: nexusbridgehub-worker-custom-macos-amd64
+          - os: ubuntu-20.04
+            platform: linux
+            artifact_name: nexusbridgehub-worker-custom
+            asset_name: nexusbridgehub-worker-custom-linux-amd64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install .[builder]
+
+      - name: Build worker with custom handlers
+        env:
+          SERVER_URL: ${{ github.event.inputs.server_url || secrets.BRIDGE_SERVER_URL || 'wss://bridge.example.com:8765' }}
+        run: |
+          nexusbridgehub \
+            --server-url "$SERVER_URL" \
+            --register-code examples/handlers.py \
+            --name nexusbridgehub-worker-custom \
+            --output-dir ./build-output
+
+      - name: Prepare artifact
+        run: |
+          mkdir -p ./artifacts
+          cp ./build-output/dist/${{ matrix.artifact_name }} ./artifacts/${{ matrix.asset_name }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}
+          path: ./artifacts/${{ matrix.asset_name }}
+          retention-days: 30

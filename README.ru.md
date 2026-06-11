@@ -137,16 +137,34 @@ ctrl = BridgeController(
 result = await ctrl.invoke("run_task", {"job_id": "job-42"})
 ```
 
-### 6. Тонкий клиент для пользователей
+### 6. Сборка standalone-бинарника для пользователей
+
+Собери готовый исполняемый файл для распространения (Python не нужен на машине пользователя):
 
 ```bash
-# Пользователь вводит pair-код от бота (URL сервера не светится)
-nexusbridgehub-worker --pair-code ABCD1234
-
-# Сборка .exe с зашифрованным адресом сервера
+# Установи с зависимостями для сборки
 pip install nexusbridgehub[builder]
-nexusbridgehub-build --server-url wss://bridge.example.com:8765 --output-dir worker_dist
+
+# Собери воркер с зашифрованным URL сервера
+nexusbridgehub --server-url wss://bridge.example.com:8765
+
+# Сборка с кастомными хендлерами
+nexusbridgehub \
+    --server-url wss://bridge.example.com:8765 \
+    --register-code handlers.py \
+    --icon app.ico \
+    --name myapp-worker
 ```
+
+**Результат:** Один исполняемый файл в `./dist/` (Windows: `.exe`, macOS/Linux: бинарник)
+
+**Возможности:**
+- Зашифрованный URL сервера (AES-256-GCM + machine fingerprint)
+- Встроенные кастомные команды
+- Не требует установки Python
+- Кросс-платформенность: Windows, macOS, Linux
+
+Подробности: [docs/BUILD.md](docs/BUILD.md), автоматическая сборка для всех платформ: [docs/CI-CD.md](docs/CI-CD.md).
 
 ## Безопасность
 

@@ -71,7 +71,7 @@ Changelog = "https://github.com/rxzwu/nexusbridgehub/blob/main/CHANGELOG.md"
 [project.scripts]
 nexusbridgehub-server = "nexusbridgehub.server:main_cli"
 nexusbridgehub-worker = "nexusbridgehub.worker_app:main_cli"
-nexusbridgehub-build = "nexusbridgehub.builder:main_cli"
+nexusbridgehub = "nexusbridgehub.builder:main_cli"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -5,6 +5,30 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Binary builder system**: `nexusbridgehub build` command for creating standalone executables
+  - Support for custom command handlers via `--register-code`
+  - Custom icon support with `--icon` (`.ico`, `.icns`, `.png`)
+  - `--noconsole` flag for GUI mode (Windows/macOS)
+  - `--onedir` option for directory-based builds
+  - Automatic handler loading from `worker_bundle.py`
+- **Documentation**:
+  - [docs/BUILD.md](docs/BUILD.md) — comprehensive build guide with examples
+  - [docs/CI-CD.md](docs/CI-CD.md) — GitHub Actions workflow for multi-platform builds
+  - [examples/handlers.py](examples/handlers.py) — example custom command handlers
+  - [.github/workflows/build-workers.yml](.github/workflows/build-workers.yml) — automated build workflow
+- **Enhanced CLI**: Renamed `nexusbridgehub-build` → `nexusbridgehub` (shorter, cleaner)
+- **Worker improvements**: Auto-load custom handlers from worker_bundle during build
+
+### Changed
+
+- Builder now validates custom handler code before building
+- Improved error messages and build output formatting
+- Enhanced PyInstaller integration with `--collect-all` for better packaging
+
 ## [0.1.0] - 2026-06-06
 
 ### Added

@@ -105,16 +105,34 @@ ctrl = BridgeController(
 result = await ctrl.invoke("run_task", {"job_id": "job-42"})
 ```
 
-### 4. Thin client for users
+### 4. Build standalone worker binary
+
+Build a distributable executable for users (no Python required on their machine):
 
 ```bash
-# User runs with pair code from bot (no server URL visible)
-nexusbridgehub-worker --pair-code ABCD1234
-
-# Build distributable .exe with encrypted server URL
+# Install with builder dependencies
 pip install nexusbridgehub[builder]
-nexusbridgehub-build --server-url wss://bridge.example.com:8765 --output-dir worker_dist
+
+# Build worker binary with encrypted server URL
+nexusbridgehub --server-url wss://bridge.example.com:8765
+
+# Build with custom handlers
+nexusbridgehub \
+    --server-url wss://bridge.example.com:8765 \
+    --register-code handlers.py \
+    --icon app.ico \
+    --name myapp-worker
 ```
+
+**Output:** Single-file executable in `./dist/` (Windows: `.exe`, macOS/Linux: binary)
+
+**Features:**
+- Encrypted server URL (AES-256-GCM + machine fingerprint)
+- Custom command handlers embedded
+- No Python installation needed
+- Cross-platform: Windows, macOS, Linux
+
+See [docs/BUILD.md](docs/BUILD.md) for details and [docs/CI-CD.md](docs/CI-CD.md) for automated multi-platform builds.
 
 ## Per-user workers
 
