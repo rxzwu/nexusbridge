@@ -5,6 +5,38 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] - 2026-06-12
+
+### Added
+
+- **Pair Code Authentication** - Required for both GUI and CLI
+  - Interactive pair code input in GUI (text entry field)
+  - Interactive pair code prompt in CLI (keyboard input)
+  - Default pair code TTL: 10 minutes (configurable via AuthManager)
+  - No more hardcoded tokens - users must authenticate via bot
+- **Enhanced CLI Worker**
+  - Connection status display at startup
+  - Interactive pair code prompt with instructions
+  - `--no-prompt` flag to disable interactive input
+  - Better error messages and status indicators
+- **GUI Customization System**
+  - Customizable colors (primary, success, error, warning)
+  - Customizable fonts (family and sizes)
+  - Customizable window title and dimensions
+  - `--gui-config` flag to load JSON configuration
+  - `GUIConfig` class with defaults
+  - Example config: `examples/gui_config.json`
+- **AuthManager improvements**
+  - Configurable pair code TTL (default: 600 seconds = 10 minutes)
+  - Better documentation of `create_pair_code` parameters
+
+### Changed
+
+- GUI now requires pair code on connect (no auto-connect)
+- CLI prompts for pair code if not provided via arguments
+- Builder accepts `--gui-config` for GUI customization
+- Pair code default TTL increased from 5 to 10 minutes
+
 ## [0.2.2] - 2026-06-12
 
 ### Added
@@ -86,6 +118,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI on Python 3.11–3.14
 - Documentation: README (EN/RU), DEPLOY.ru.md, TESTING.ru.md
 
+[0.2.3]: https://github.com/rxzwu/nexusbridgehub/releases/tag/v0.2.3
 [0.2.2]: https://github.com/rxzwu/nexusbridgehub/releases/tag/v0.2.2
 [0.2.1]: https://github.com/rxzwu/nexusbridgehub/releases/tag/v0.2.1
 [0.2.0]: https://github.com/rxzwu/nexusbridgehub/releases/tag/v0.2.0

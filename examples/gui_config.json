@@ -1,0 +1,15 @@
+{
+  "app_title": "My Custom Worker",
+  "window_width": 900,
+  "window_height": 700,
+  "primary_color": "#2196F3",
+  "success_color": "#4CAF50",
+  "error_color": "#F44336",
+  "warning_color": "#FF9800",
+  "bg_color": "#FFFFFF",
+  "text_color": "#000000",
+  "font_family": "Arial",
+  "font_size": 10,
+  "log_font_family": "Consolas",
+  "log_font_size": 9
+}

@@ -66,7 +66,18 @@ class AuthManager:
         data = jwt.decode(token, self._secret, algorithms=[self._algorithm])
         return TokenClaims.from_dict(data)
 
-    def create_pair_code(self, *, project_id: str, user_id: str, ttl_seconds: int = 300) -> str:
+    def create_pair_code(self, *, project_id: str, user_id: str, ttl_seconds: int = 600) -> str:
+        """
+        Create a pair code for worker authentication.
+
+        Args:
+            project_id: Project identifier
+            user_id: User identifier
+            ttl_seconds: Time to live in seconds (default: 600 = 10 minutes)
+
+        Returns:
+            8-character pair code (uppercase alphanumeric)
+        """
         code = secrets.token_urlsafe(6).upper()[:8]
         self._pair_codes[code] = {
             "project_id": project_id,

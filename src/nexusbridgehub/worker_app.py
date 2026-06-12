@@ -152,10 +152,30 @@ def main_cli() -> None:
     parser.add_argument("--user-id", default=os.getenv("NEXUSBRIDGEHUB_USER_ID", ""))
     parser.add_argument("--token", default=os.getenv("NEXUSBRIDGEHUB_TOKEN", ""))
     parser.add_argument("--pair-code", default=os.getenv("NEXUSBRIDGEHUB_PAIR_CODE", ""))
+    parser.add_argument("--no-prompt", action="store_true", help="Don't prompt for pair code interactively")
     args = parser.parse_args()
 
     setup_logging()
     encrypted, seed = _load_embedded_config()
+
+    # Interactive pair code input if not provided
+    pair_code = args.pair_code
+    if not pair_code and not args.token and not args.no_prompt:
+        print("\n" + "="*60)
+        print("  NexusBridgeHub Worker - Secure Remote Task Execution")
+        print("="*60)
+        print("\nTo connect, you need a pair code from your bot.")
+        print("The code is valid for 10 minutes after generation.\n")
+        try:
+            pair_code = input("Enter pair code: ").strip()
+            if not pair_code:
+                _log.error("Pair code is required")
+                return
+            print(f"\n[OK] Connecting with code: {pair_code}")
+            print("-" * 60)
+        except (KeyboardInterrupt, EOFError):
+            print("\n[CANCELLED] Connection cancelled by user")
+            return
 
     app = WorkerApp(
         server_url=args.server_url or None,
@@ -164,14 +184,20 @@ def main_cli() -> None:
         project_id=args.project_id,
         user_id=args.user_id,
         token=args.token,
-        pair_code=args.pair_code,
+        pair_code=pair_code,
     )
 
     if sys.platform == "win32" and sys.version_info < (3, 14):
         asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
+    # Print connection status
+    print(f"\n[STATUS] Starting worker...")
+    print(f"[STATUS] Server: {app.resolve_server_url()[:50]}...")
+    print(f"[STATUS] Press Ctrl+C to stop\n")
+
     try:
         asyncio.run(app.run())
     except KeyboardInterrupt:
+        print("\n[OK] Shutting down worker...")
         app.stop()
         _log.info("worker stopped by user")
