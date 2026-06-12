@@ -59,3 +59,96 @@ jobs:
         run: |
           python -m build
           python -m twine check dist/*
+
+  build-test:
+    name: Test binary build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+          - os: macos-latest
+            platform: macos
+          - os: ubuntu-20.04
+            platform: linux
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[builder]
+
+      - name: Verify CLI commands
+        run: |
+          nexusbridgehub --help
+          python -c "import nexusbridgehub; print(f'Version: {nexusbridgehub.__version__}')"
+
+      - name: Test bundle generation (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          nexusbridgehub --server-url wss://test.example.com:8765 --bundle-only --output-dir ./test-build
+          if (-not (Test-Path ./test-build/worker_bundle.py)) {
+            Write-Error "Bundle not generated"
+            exit 1
+          }
+          Write-Output "✓ Bundle generated successfully"
+
+      - name: Test bundle generation (Unix)
+        if: matrix.platform != 'windows'
+        shell: bash
+        run: |
+          nexusbridgehub --server-url wss://test.example.com:8765 --bundle-only --output-dir ./test-build
+          if [ ! -f ./test-build/worker_bundle.py ]; then
+            echo "Bundle not generated"
+            exit 1
+          fi
+          echo "✓ Bundle generated successfully"
+
+      - name: Test full build with handlers (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          nexusbridgehub --server-url wss://test.example.com:8765 --register-code examples/simple_handlers.py --name test-worker --output-dir ./test-full
+
+      - name: Test full build with handlers (Unix)
+        if: matrix.platform != 'windows'
+        shell: bash
+        run: |
+          nexusbridgehub --server-url wss://test.example.com:8765 --register-code examples/simple_handlers.py --name test-worker --output-dir ./test-full
+
+      - name: Verify binary (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          if (-not (Test-Path ./test-full/dist/test-worker.exe)) {
+            Write-Error "Binary not found"
+            exit 1
+          }
+          $size = (Get-Item ./test-full/dist/test-worker.exe).Length / 1MB
+          Write-Output "✓ Binary built: $([math]::Round($size, 1)) MB"
+          & ./test-full/dist/test-worker.exe --help
+
+      - name: Verify binary (Unix)
+        if: matrix.platform != 'windows'
+        shell: bash
+        run: |
+          if [ ! -f ./test-full/dist/test-worker ]; then
+            echo "Binary not found"
+            exit 1
+          fi
+          size=$(du -h ./test-full/dist/test-worker | cut -f1)
+          echo "✓ Binary built: $size"
+          chmod +x ./test-full/dist/test-worker
+          ./test-full/dist/test-worker --help
