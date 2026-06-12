@@ -5,6 +5,36 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-06-12
+
+### Added
+
+- **GUI Worker Application** (`worker_gui.py`)
+  - Visual connection status indicator (connected/disconnected)
+  - Real-time activity log viewer (transparency mode)
+  - Connection information display (server, project, user)
+  - Start/Stop controls
+  - All server actions logged for user transparency
+  - No secrets exposed in logs
+- **Windows Version Info** for executables
+  - Company name, product name, version information
+  - Legal copyright and description
+  - Reduces antivirus false positives
+- **--gui flag** for building GUI version
+  - `nexusbridgehub --server-url wss://... --gui`
+  - Automatically enables --noconsole
+  - Recommended for end users
+
+### Fixed
+
+- Antivirus false positive detection (dropper) - added Windows version metadata
+- PyInstaller builds now include proper file metadata on Windows
+
+### Changed
+
+- Builder examples updated to show GUI mode
+- Improved build output messages
+
 ## [0.2.1] - 2026-06-12
 
 ### Fixed
@@ -56,6 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI on Python 3.11–3.14
 - Documentation: README (EN/RU), DEPLOY.ru.md, TESTING.ru.md
 
+[0.2.2]: https://github.com/rxzwu/nexusbridgehub/releases/tag/v0.2.2
 [0.2.1]: https://github.com/rxzwu/nexusbridgehub/releases/tag/v0.2.1
 [0.2.0]: https://github.com/rxzwu/nexusbridgehub/releases/tag/v0.2.0
 [0.1.0]: https://github.com/rxzwu/nexusbridgehub/releases/tag/v0.1.0

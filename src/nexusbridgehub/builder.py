@@ -86,6 +86,7 @@ def build_executable(
     icon: Path | None = None,
     register_code: str | None = None,
     noconsole: bool = False,
+    gui: bool = False,
 ) -> Path:
     """
     Build a standalone worker executable with PyInstaller.
@@ -98,6 +99,7 @@ def build_executable(
         icon: Path to .ico (Windows) or .icns (macOS) icon file
         register_code: Python code defining register_handlers(bridge)
         noconsole: Hide console window (Windows/macOS GUI mode)
+        gui: Build with GUI (enables noconsole automatically)
 
     Returns:
         Path to built executable
@@ -121,8 +123,14 @@ def build_executable(
     )
     seed_path.write_bytes(seed)
 
-    # Copy worker_app.py to bundle directory
-    shutil.copy(pkg_root / "worker_app.py", bundle_dir / "worker_app.py")
+    # Choose entry point: GUI or CLI
+    if gui:
+        shutil.copy(pkg_root / "worker_gui.py", bundle_dir / "worker_gui.py")
+        entry_point = bundle_dir / "worker_gui.py"
+        noconsole = True  # GUI always hides console
+    else:
+        shutil.copy(pkg_root / "worker_app.py", bundle_dir / "worker_app.py")
+        entry_point = bundle_dir / "worker_app.py"
 
     # Build PyInstaller command
     cmd = [
@@ -146,12 +154,18 @@ def build_executable(
     if icon and icon.exists():
         cmd.extend(["--icon", str(icon)])
 
+    # Add version info for Windows (reduces antivirus false positives)
+    if sys.platform == "win32":
+        version_file = pkg_root / "version_info.txt"
+        if version_file.exists():
+            cmd.extend(["--version-file", str(version_file)])
+
     cmd.extend([
         "--hidden-import=nexusbridgehub",
         "--hidden-import=nexusbridgehub.worker_bundle",
         "--collect-all=nexusbridgehub",
         "--paths", str(bundle_dir),
-        str(bundle_dir / "worker_app.py"),
+        str(entry_point),
     ])
 
     try:
@@ -178,17 +192,20 @@ def main_cli() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=textwrap.dedent("""
             Examples:
-              # Basic build with encrypted server URL
-              nexusbridgehub build --server-url wss://bridge.example.com:8765
+              # Basic CLI build
+              nexusbridgehub --server-url wss://bridge.example.com:8765
 
-              # Build with custom handlers from file
-              nexusbridgehub build --server-url wss://... --register-code handlers.py
+              # Build with GUI (recommended for end users)
+              nexusbridgehub --server-url wss://bridge.example.com:8765 --gui
+
+              # Build with custom handlers
+              nexusbridgehub --server-url wss://... --register-code handlers.py --gui
 
               # Build with icon and custom name
-              nexusbridgehub build --server-url wss://... --icon app.ico --name myworker
+              nexusbridgehub --server-url wss://... --icon app.ico --name myworker --gui
 
               # Generate encrypted bundle only (no PyInstaller)
-              nexusbridgehub build --server-url wss://... --bundle-only
+              nexusbridgehub --server-url wss://... --bundle-only
         """),
     )
     parser.add_argument(
@@ -220,6 +237,11 @@ def main_cli() -> None:
         "--noconsole",
         action="store_true",
         help="Hide console window (Windows/macOS GUI mode)",
+    )
+    parser.add_argument(
+        "--gui",
+        action="store_true",
+        help="Build with GUI (shows connection status and activity logs)",
     )
     parser.add_argument(
         "--bundle-only",
@@ -264,8 +286,11 @@ def main_cli() -> None:
         return
 
     # Full build
-    print(f"Building {args.name} for {sys.platform}...")
+    build_mode = "GUI" if args.gui else "CLI"
+    print(f"Building {args.name} ({build_mode}) for {sys.platform}...")
     print(f"  Server URL: {args.server_url[:30]}...")
+    if args.gui:
+        print(f"  Mode: GUI with connection status and activity logs")
     if register_code_str:
         print(f"  Custom handlers: {args.register_code}")
     if args.icon:
@@ -279,9 +304,13 @@ def main_cli() -> None:
         icon=args.icon,
         register_code=register_code_str,
         noconsole=args.noconsole,
+        gui=args.gui,
     )
 
     print(f"\n[OK] Build successful: {exe}")
     print(f"     Size: {exe.stat().st_size / 1024 / 1024:.1f} MB")
+    print(f"     Mode: {build_mode}")
     print(f"     Build seed: {out / 'build_seed.bin'}")
+    if args.gui:
+        print(f"     Features: Connection status, activity logs, transparency mode")
     print("\nDistribute the executable to users -- no Python installation required!")
